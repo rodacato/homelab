@@ -1,0 +1,47 @@
+networks:
+  homelab-net:
+    driver: bridge
+
+services:
+  # --- Orchestration & Networking ---
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: cloudflared
+    restart: unless-stopped
+    command: tunnel run
+    environment:
+      - TUNNEL_TOKEN=${CLOUDFLARED_TOKEN}
+    networks:
+      - homelab-net
+
+  # --- Automation ---
+  n8n:
+    image: n8nio/n8n:latest
+    container_name: n8n
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:5678:5678" # Solo expuesto a localhost, Cloudflare maneja el acceso externo
+    environment:
+      - N8N_HOST=${DOMAIN_N8N}
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=https
+      - WEBHOOK_URL=https://${DOMAIN_N8N}/
+      - GENERIC_TIMEZONE=${TIMEZONE}
+    volumes:
+      - n8n_data:/home/node/.n8n
+    networks:
+      - homelab-net
+    depends_on:
+      - cloudflared
+
+  # --- Future: AI & LLMs (Descomentar cuando estés listo) ---
+  # lm-studio:
+  #   image: lmstudio/lmstudio:latest # (Ejemplo, verificar imagen oficial al momento de usar)
+  #   container_name: lm-studio
+  #   volumes:
+  #     - ./volumes/lm-studio:/data
+  #   networks:
+  #     - homelab-net
+
+volumes:
+  n8n_data:
