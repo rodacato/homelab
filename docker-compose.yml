@@ -27,12 +27,45 @@ services:
       - N8N_PROTOCOL=https
       - WEBHOOK_URL=https://${DOMAIN_N8N}/
       - GENERIC_TIMEZONE=${TIMEZONE}
+      - OLLAMA_HOST=http://ollama:11434
     volumes:
       - n8n_data:/home/node/.n8n
     networks:
       - homelab-net
     depends_on:
       - cloudflared
+      - ollama
+
+  # --- AI & LLMs ---
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ollama
+    restart: unless-stopped
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    networks:
+      - homelab-net
+
+  open-webui:
+    image: ghcr.io/open-webui/open-webui:main
+    container_name: open-webui
+    restart: unless-stopped
+    ports:
+      - "3001:8080"
+    environment:
+      - OLLAMA_BASE_URL=http://ollama:11434
+      # - OPENAI_API_BASE_URL=http://host.docker.internal:1234/v1 # Descomentar para conectar a LM Studio por defecto
+      # - OPENAI_API_KEY=lm-studio
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - open_webui_data:/app/backend/data
+    networks:
+      - homelab-net
+    depends_on:
+      - ollama
 
   # --- Future: AI & LLMs (Descomentar cuando estés listo) ---
   # lm-studio:
@@ -45,3 +78,5 @@ services:
 
 volumes:
   n8n_data:
+  ollama_data:
+  open_webui_data:

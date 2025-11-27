@@ -1,0 +1,80 @@
+version: '3.8'
+
+networks:
+  homelab-net:
+    driver: bridge
+
+services:
+  # --- Orchestration & Networking ---
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: cloudflared
+    restart: unless-stopped
+    command: tunnel run
+    environment:
+      - TUNNEL_TOKEN=${CLOUDFLARED_TOKEN}
+    networks:
+      - homelab-net
+
+  # --- AI & LLMs ---
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ollama
+    restart: unless-stopped
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    networks:
+      - homelab-net
+
+  # Optional: Web Interface for Ollama
+  open-webui:
+    image: ghcr.io/open-webui/open-webui:main
+    container_name: open-webui
+    restart: unless-stopped
+    ports:
+      - "3001:8080"
+    environment:
+      - OLLAMA_BASE_URL=http://ollama:11434
+    volumes:
+      - open_webui_data:/app/backend/data
+    networks:
+      - homelab-net
+    depends_on:
+      - ollama
+
+  # --- Automation ---
+  n8n:
+    image: n8nio/n8n:latest
+    container_name: n8n
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:5678:5678"
+    environment:
+      - N8N_HOST=${DOMAIN_N8N}
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=https
+      - WEBHOOK_URL=https://${DOMAIN_N8N}/
+      - GENERIC_TIMEZONE=${TIMEZONE}
+      # Connect to local Ollama instance
+      - OLLAMA_HOST=http://ollama:11434
+    volumes:
+      - n8n_data:/home/node/.n8n
+    networks:
+      - homelab-net
+    depends_on:
+      - cloudflared
+      - ollama
+
+volumes:
+  n8n_data:
+  ollama_data:
+  open_webui_data:
