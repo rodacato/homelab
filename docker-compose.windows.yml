@@ -17,23 +17,6 @@ services:
       - homelab-net
 
   # --- AI & LLMs ---
-  ollama:
-    image: ollama/ollama:latest
-    container_name: ollama
-    restart: unless-stopped
-    ports:
-      - "11434:11434"
-    volumes:
-      - ollama_data:/root/.ollama
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: 1
-              capabilities: [gpu]
-    networks:
-      - homelab-net
 
   # Optional: Web Interface for Ollama
   open-webui:
@@ -43,15 +26,17 @@ services:
     ports:
       - "3001:8080"
     environment:
-      - OLLAMA_BASE_URL=http://ollama:11434
+      # - OLLAMA_BASE_URL=http://ollama:11434
+      - OPENAI_API_BASE_URL=http://host.docker.internal:1234/v1
+      - OPENAI_API_KEY=lm-studio
     volumes:
       - open_webui_data:/app/backend/data
     networks:
       - homelab-net
-    depends_on:
-      - ollama
+    # depends_on:
+    #   - ollama
 
-  # --- Automation ---
+    # --- Automation ---
   n8n:
     image: n8nio/n8n:latest
     container_name: n8n
@@ -65,16 +50,18 @@ services:
       - WEBHOOK_URL=https://${DOMAIN_N8N}/
       - GENERIC_TIMEZONE=${TIMEZONE}
       # Connect to local Ollama instance
-      - OLLAMA_HOST=http://ollama:11434
+      # - OLLAMA_HOST=http://ollama:11434
+      # Connect to LM Studio on Host
+      # - OPENAI_API_BASE_URL=http://host.docker.internal:1234/v1
     volumes:
       - n8n_data:/home/node/.n8n
     networks:
       - homelab-net
     depends_on:
       - cloudflared
-      - ollama
+      # - ollama
 
 volumes:
-  n8n_data:
-  ollama_data:
+  n8n_data: # ollama_data:
+
   open_webui_data:
