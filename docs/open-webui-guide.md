@@ -74,3 +74,64 @@ Para acceder a tu chat desde cualquier lugar (ej. `chat.tudominio.com`):
 ### 3. Open WebUI va lento
 *   **Causa**: Tu PC está procesando la IA. La velocidad depende 100% de tu tarjeta gráfica (GPU) y RAM.
 *   **Solución**: Usa modelos "quantized" (ej. `Q4_K_M`) que son más ligeros y rápidos.
+
+## Tip: Modelos de Razonamiento (DeepSeek-R1, etc.)
+
+Si usas modelos que "piensan" (muestran `[THINK]`) y quieres ocultarlo, necesitas crear un **Modelo Personalizado** en Open WebUI, ya que los modelos externos (LM Studio) no siempre se dejan editar directamente.
+
+1.  En Open WebUI, ve a **Workspace** -> **Models**.
+2.  Haz clic en el botón **"+"** (Create a model).
+3.  **Name**: Ponle un nombre (ej. `DeepSeek-Fixed`).
+4.  **Base Model**: Escribe **exactamente** el nombre del modelo tal cual sale en tu lista de chat (ej. `mistral` o `local-model`).
+5.  **System Prompt**: Pega esto:
+    ```text
+    Always enclose your internal reasoning inside <think> and </think> tags. Do not use [THINK] or other formats.
+    ```
+6.  **Save & Update**.
+
+## Tip: Ocultar Modelos No Deseados
+
+Si ves modelos extraños (ej. `arena-model`, `text-embedding`) en el chat pero **NO** aparecen en la lista de Workspace:
+
+1.  Ve a tu perfil (abajo izquierda) -> **Admin Panel**.
+2.  Ve a **Settings** -> **Models**.
+3.  Busca la sección **"Manage Models"** o **"External Models"**.
+4.  Ahí podrás ver una lista de todos los modelos detectados externamente.
+5.  Usa el ícono de **Ojo** (visibilidad) para ocultar los que no quieras ver en el dropdown.
+    *   *Esto es común cuando se conecta vía OpenAI/LM Studio, ya que traen modelos por defecto.*
+6.  **Arena / Evaluate**: Si ves modelos tipo "Arena", revisa si tienes activada la opción de **"Enable Arena Model"** o similar en la configuración de interfaz, y desactívala.
+
+## Workflow: Rápido vs Pensante
+
+Para cambiar entre "Modo Pensar" y "Modo Rápido", simplemente **cambia de modelo** en el menú superior del chat:
+
+*   **Para razonamiento complejo**: Selecciona tu modelo personalizado (ej. `DeepSeek-Fixed`). Tardará más pero será más profundo.
+*   **Para velocidad**: Selecciona el modelo base original (ej. `mistral` o `llama-3`). Responderá al instante sin "pensar".
+
+¡Ten ambos a mano y alterna según lo que necesites!
+
+## Guía Rápida de Modelos
+
+Para que sepas qué descargar en LM Studio según lo que necesites:
+
+| Categoría | Tamaño | Modelos Recomendados | Uso Ideal |
+| :--- | :--- | :--- | :--- |
+| **Velocidad (Flash)** | 3B - 8B | `Llama 3.2 3B`, `Qwen 2.5 7B`, `Phi-3.5` | Chat rápido, resúmenes simples, traducciones. Respuesta casi instantánea. |
+| **Balance** | 8B - 14B | `Mistral Nemo 12B`, `Llama 3.1 8B` | El punto medio. Buena inteligencia y velocidad decente. |
+| **Inteligencia (Heavy)** | 24B - 70B | `Mistral Small 24B`, `Llama 3.3 70B` | Razonamiento complejo, programación difícil. Más lento pero más "listo". |
+| **Vision (Ver fotos)** | "VL" | `Qwen 2.5 VL`, `Llama 3.2 Vision` | Si necesitas subir imágenes para que las analice. |
+
+## Preguntas Frecuentes (FAQ)
+
+### ¿Puedo correr dos modelos a la vez?
+**No directamente.** LM Studio carga **un solo modelo** en la memoria RAM a la vez.
+*   Si cambias de modelo en Open WebUI, verás que la primera respuesta tarda un poco porque LM Studio tiene que "descargar" el anterior y "cargar" el nuevo en la RAM.
+*   *Truco:* Puedes abrir dos ventanas de LM Studio (si tu PC aguanta) en puertos distintos, pero es avanzado.
+
+### ¿Cómo mantengo mis modelos actualizados?
+Es un proceso **manual**.
+1.  En LM Studio, borras el archivo viejo (pestaña de carpeta).
+2.  Buscas y descargas la nueva versión.
+3.  Open WebUI detectará el cambio automáticamente (quizás tengas que refrescar la página).
+
+Ahora, usa este nuevo modelo (`DeepSeek-Fixed`) para chatear. Open WebUI inyectará el prompt y el pensamiento se verá colapsado.

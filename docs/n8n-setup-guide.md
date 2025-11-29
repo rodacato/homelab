@@ -49,6 +49,21 @@ Una vez que el contenedor `cloudflared` esté corriendo (puedes verificarlo con 
 
 ¡Listo! Tu n8n debería ser accesible vía HTTPS en tu subdominio.
 
+## Integración con IA Local (LM Studio)
+
+Para usar tus modelos locales dentro de tus flujos de n8n:
+
+1.  En n8n, añade el nodo **OpenAI**.
+2.  En la configuración de **Credential**, selecciona "Create New".
+3.  **API Key**: Escribe cualquier cosa (ej. `lm-studio`), no se valida pero es requerida.
+4.  **Base URL**:
+    *   Haz clic en la opción para cambiar la URL base (a veces escondida bajo "Show more" o "Custom URL").
+    *   Introduce: `http://host.docker.internal:1234/v1`
+5.  **Model**:
+    *   En el nodo, selecciona "Model" -> "Other" (o escribe manualmente el ID del modelo).
+    *   El ID suele ser el nombre del archivo en LM Studio, pero a menudo basta con poner `local-model` si solo tienes uno cargado.
+6.  ¡Prueba el nodo! Debería responder usando tu LM Studio.
+
 ## Troubleshooting (Solución de Problemas)
 
 ### 1. Error: "Provided Tunnel token is not valid"
