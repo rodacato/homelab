@@ -1,0 +1,7 @@
+users:
+    rodacato:
+        email: ""
+        name: ""
+        password: $2a$11$yWsHTamUBv38TR2Bt4lYbeEoRMONorlavzvYmSHbwSB8dGtr6.FYK
+        filter: ""
+        roles: ""

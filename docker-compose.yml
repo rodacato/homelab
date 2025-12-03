@@ -29,6 +29,46 @@ services:
     networks:
       - homelab-net
 
+  dozzle:
+    image: amir20/dozzle:latest
+    container_name: dozzle
+    restart: unless-stopped
+    ports:
+      - "9999:8080"
+    environment:
+      - DOZZLE_LEVEL=debug
+      - DOZZLE_AUTH_PROVIDER=simple
+    volumes:
+      - ./dozzle/users.yml:/data/users.yml
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - homelab-net
+
+  uptime-kuma:
+    image: louislam/uptime-kuma:1
+    container_name: uptime-kuma
+    restart: unless-stopped
+    ports:
+      - "8083:3001"
+    volumes:
+      - uptime_kuma_data:/app/data
+    networks:
+      - homelab-net
+
+  homepage:
+    image: ghcr.io/gethomepage/homepage:latest
+    container_name: homepage
+    restart: unless-stopped
+    ports:
+      - "8082:3000"
+    environment:
+      - HOMEPAGE_ALLOWED_HOSTS=home.notdefined.dev,localhost
+    volumes:
+      - ./homepage/config:/app/config
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - homelab-net
+
   # --- AI & LLMs ---
 
   # Optional: Web Interface for Ollama
@@ -95,3 +135,4 @@ volumes:
 
   open_webui_data:
   portainer_data:
+  uptime_kuma_data:

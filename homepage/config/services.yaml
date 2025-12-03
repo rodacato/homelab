@@ -1,0 +1,50 @@
+---
+# For configuration options and examples, please see:
+# https://gethomepage.dev/en/configs/services/
+
+- Management:
+    - Portainer:
+        icon: portainer.png
+        href: https://portainer.notdefined.dev
+        description: Docker Management
+        server: my-docker
+        container: portainer
+        widget:
+            type: portainer
+            url: http://portainer:9000
+            env: 3
+            key: ptr_s1jjs6xonpjN0+eH9o7wgtK64zrHi07q0hpNL4Ed2PM=
+
+- Monitoring:
+    - Dozzle:
+        icon: dozzle.png
+        href: https://dozzle.notdefined.dev
+        description: Log Viewer
+        server: my-docker
+        container: dozzle
+
+    - Uptime Kuma:
+        icon: uptime-kuma.png
+        href: https://status.notdefined.dev
+        description: Uptime Monitoring
+        server: my-docker
+        container: uptime-kuma
+        # widget:
+        #     type: uptimekuma
+        #     url: http://uptime-kuma:3001
+        #     slug: default # Change this to your monitor slug
+
+- AI:
+    - Open WebUI:
+        icon: open-webui.png
+        href: https://chat.notdefined.dev
+        description: LLM Interface
+        server: my-docker
+        container: open-webui
+
+    - n8n:
+        icon: n8n.png
+        href: https://n8n.notdefined.dev
+        description: Workflow Automation
+        server: my-docker
+        container: n8n
