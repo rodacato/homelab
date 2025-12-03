@@ -1,3 +1,5 @@
+version: '3.8'
+
 networks:
   homelab-net:
     driver: bridge
@@ -14,40 +16,22 @@ services:
     networks:
       - homelab-net
 
-  # --- Automation ---
-  n8n:
-    image: n8nio/n8n:latest
-    container_name: n8n
+  # --- Management ---
+  portainer:
+    image: portainer/portainer-ce:latest
+    container_name: portainer
     restart: unless-stopped
     ports:
-      - "127.0.0.1:5678:5678" # Solo expuesto a localhost, Cloudflare maneja el acceso externo
-    environment:
-      - N8N_HOST=${DOMAIN_N8N}
-      - N8N_PORT=5678
-      - N8N_PROTOCOL=https
-      - WEBHOOK_URL=https://${DOMAIN_N8N}/
-      - GENERIC_TIMEZONE=${TIMEZONE}
-      - OLLAMA_HOST=http://ollama:11434
+      - "9000:9000"
     volumes:
-      - n8n_data:/home/node/.n8n
+      - /var/run/docker.sock:/var/run/docker.sock
+      - portainer_data:/data
     networks:
       - homelab-net
-    depends_on:
-      - cloudflared
-      - ollama
 
   # --- AI & LLMs ---
-  ollama:
-    image: ollama/ollama:latest
-    container_name: ollama
-    restart: unless-stopped
-    ports:
-      - "11434:11434"
-    volumes:
-      - ollama_data:/root/.ollama
-    networks:
-      - homelab-net
 
+  # Optional: Web Interface for Ollama
   open-webui:
     image: ghcr.io/open-webui/open-webui:main
     container_name: open-webui
@@ -55,28 +39,59 @@ services:
     ports:
       - "3001:8080"
     environment:
-      - OLLAMA_BASE_URL=http://ollama:11434
-      # - OPENAI_API_BASE_URL=http://host.docker.internal:1234/v1 # Descomentar para conectar a LM Studio por defecto
-      # - OPENAI_API_KEY=lm-studio
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
+      # - OLLAMA_BASE_URL=http://ollama:11434
+      - OPENAI_API_BASE_URL=http://host.docker.internal:1234/v1
+      - OPENAI_API_KEY=lm-studio
+      # --- Image Generation (ComfyUI) ---
+      - ENABLE_IMAGE_GENERATION=true
+      - IMAGE_GENERATION_ENGINE=comfyui
+      - COMFYUI_BASE_URL=http://host.docker.internal:8188/
     volumes:
       - open_webui_data:/app/backend/data
     networks:
       - homelab-net
-    depends_on:
-      - ollama
+    # depends_on:
+    #   - ollama
 
-  # --- Future: AI & LLMs (Descomentar cuando estés listo) ---
-  # lm-studio:
-  #   image: lmstudio/lmstudio:latest # (Ejemplo, verificar imagen oficial al momento de usar)
-  #   container_name: lm-studio
-  #   volumes:
-  #     - ./volumes/lm-studio:/data
-  #   networks:
-  #     - homelab-net
+    # --- Vector Database (Memory) ---
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: qdrant
+    restart: unless-stopped
+    ports:
+      - "6333:6333"
+    volumes:
+      - qdrant_data:/qdrant/storage
+    networks:
+      - homelab-net
+    # --- Automation ---
+  n8n:
+    image: n8nio/n8n:latest
+    container_name: n8n
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:5678:5678"
+    environment:
+      - N8N_HOST=${DOMAIN_N8N}
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=https
+      - WEBHOOK_URL=https://${DOMAIN_N8N}/
+      - GENERIC_TIMEZONE=${TIMEZONE}
+      # Connect to local Ollama instance
+      # - OLLAMA_HOST=http://ollama:11434
+      # Connect to LM Studio on Host
+      # - OPENAI_API_BASE_URL=http://host.docker.internal:1234/v1
+    volumes:
+      - n8n_data:/home/node/.n8n
+    networks:
+      - homelab-net
+    depends_on:
+      - cloudflared
+      # - ollama
 
 volumes:
   n8n_data:
-  ollama_data:
+  qdrant_data: # ollama_data:
+
   open_webui_data:
+  portainer_data:
