@@ -25,7 +25,7 @@ services:
       - "9000:9000"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-      - portainer_data:/data
+      - ./volumes/portainer:/data
     networks:
       - homelab-net
 
@@ -39,7 +39,7 @@ services:
       - DOZZLE_LEVEL=debug
       - DOZZLE_AUTH_PROVIDER=simple
     volumes:
-      - ./dozzle/users.yml:/data/users.yml
+      - ./volumes/dozzle/users.yml:/data/users.yml
       - /var/run/docker.sock:/var/run/docker.sock
     networks:
       - homelab-net
@@ -51,7 +51,7 @@ services:
     ports:
       - "8083:3001"
     volumes:
-      - uptime_kuma_data:/app/data
+      - ./volumes/uptime-kuma:/app/data
     networks:
       - homelab-net
 
@@ -64,7 +64,7 @@ services:
     environment:
       - HOMEPAGE_ALLOWED_HOSTS=home.notdefined.dev,localhost
     volumes:
-      - ./homepage/config:/app/config
+      - ./volumes/homepage/config:/app/config
       - /var/run/docker.sock:/var/run/docker.sock
     networks:
       - homelab-net
@@ -85,14 +85,34 @@ services:
       # --- Image Generation (ComfyUI) ---
       - ENABLE_IMAGE_GENERATION=true
       - IMAGE_GENERATION_ENGINE=comfyui
-      - COMFYUI_BASE_URL=http://host.docker.internal:8188/
+      - COMFYUI_BASE_URL=http://comfyui:8188/
     volumes:
-      - open_webui_data:/app/backend/data
+      - ./volumes/open-webui:/app/backend/data
     networks:
       - homelab-net
     # depends_on:
     #   - ollama
 
+  comfyui:
+    image: yanwk/comfyui-boot:cu121
+    container_name: comfyui
+    restart: unless-stopped
+    ports:
+      - "8188:8188"
+    volumes:
+      - ./volumes/comfyui/root:/root/ComfyUI
+      - ./volumes/comfyui/models:/home/runner/ComfyUI/models
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [ gpu ]
+    networks:
+      - homelab-net
     # --- Vector Database (Memory) ---
   qdrant:
     image: qdrant/qdrant:latest
@@ -101,7 +121,7 @@ services:
     ports:
       - "6333:6333"
     volumes:
-      - qdrant_data:/qdrant/storage
+      - ./volumes/qdrant:/qdrant/storage
     networks:
       - homelab-net
     # --- Automation ---
@@ -122,17 +142,11 @@ services:
       # Connect to LM Studio on Host
       # - OPENAI_API_BASE_URL=http://host.docker.internal:1234/v1
     volumes:
-      - n8n_data:/home/node/.n8n
+      - ./volumes/n8n:/home/node/.n8n
     networks:
       - homelab-net
+
     depends_on:
       - cloudflared
       # - ollama
 
-volumes:
-  n8n_data:
-  qdrant_data: # ollama_data:
-
-  open_webui_data:
-  portainer_data:
-  uptime_kuma_data:
