@@ -20,18 +20,19 @@ Aquí tienes la lista maestra de las 5 máquinas que conformarán tu laboratorio
 
 | Nombre Servidor | Usuario | Descripción / Propósito | Recursos |
 | :--- | :--- | :--- | :--- |
-| **Srv-Glados** | `chell` | **K8s Master / Main**. Servidor principal y Control Plane de Kubernetes (K3s). | 2 vCPU / 2 GB |
-| **Srv-Wheatley** | `ratman` | **K8s Worker 01 / Test**. Nodo para pruebas destructivas. Si explota, no importa. | 2 vCPU / 2 GB |
-| **Srv-CaveJohnson** | `cave` | **K8s Worker 02 / Alpha**. Nodo adicional para Alta Disponibilidad (HA). | 2 vCPU / 2 GB |
-| **Srv-Atlas** | `blue` | **Reserva / Worker 03**. Androide de pruebas para expandir el clúster. | 2 vCPU / 2 GB |
-| **Srv-PBody** | `orange` | **Reserva / Worker 04**. Androide de pruebas para expandir el clúster. | 2 vCPU / 2 GB |
+| **Srv-Glados** | `chell` | **K8s Master / Main**. Servidor principal y Control Plane de Kubernetes (K3s). | 2 vCPU / 2 GB (**50GB Disk**) |
+| **Srv-Wheatley** | `ratman` | **K8s Worker 01 / Test**. Nodo para pruebas destructivas. Si explota, no importa. | 2 vCPU / 2 GB (**50GB Disk**) |
+| **Srv-PBody** | `orange` | **K8s Worker 02 / Heavy**. Nodo potente para Elastic/Grafana/Java. | 4 vCPU / 4 GB (**50GB Disk**) |
+| **Srv-CaveJohnson** | `cave` | **Reserva / Alpha**. Servidor experimental para software inestable. | 2 vCPU / 2 GB (**50GB Disk**) |
+| **Srv-Atlas** | `blue` | **Reserva**. Androide de pruebas para expandir el clúster. | 2 vCPU / 2 GB (**50GB Disk**) |
 | **Sandbox-Kali** | `mrrobot` | **"Hack the Planet"**. Suite de seguridad Ofensiva/Defensiva para auditorías y pentesting. | 2 vCPU / 4 GB / **128MB Video** |
 
 ### 🔬 Escenario Especial: Laboratorio Kubernetes (K3s)
 ¡Buena idea reutilizar recursos! Convertiremos tus servidores actuales en un Clúster:
 *   **Master Node:** `Srv-Glados` (Controla el clúster + corre servicios estables).
-*   **Worker Nodes:** `Srv-Wheatley` + `Srv-CaveJohnson` (Hacen el trabajo sucio).
-*   **Ventaja:** No creas VMs nuevas innecesariamente. Glados ya tiene Docker, y K3s convive bien con él (o lo reemplaza).
+*   **Worker Node (Light):** `Srv-Wheatley` (Webs, APIs ligeras).
+*   **Worker Node (Heavy):** `Srv-PBody` (Elasticsearch, Bases de Datos, Coder).
+*   **Ventaja:** Tienes un clúster heterogéneo (Hybrid) real. Glados manda, PBody carga peso.
 
 ### 3. Aislamiento y Red
 *   **Virtualizador:** VirtualBox 7.x (Aislamiento total).
@@ -70,7 +71,7 @@ Aquí tienes la lista maestra de las 5 máquinas que conformarán tu laboratorio
     *   2 CPUs.
     *   **EFI:** Habilitar si es un OS moderno (Ubuntu 24.04 lo prefiere), pero para servidores a veces Legacy BIOS es menos problemático. Prueba primero sin EFI especial.
 3.  **Disco Duro:**
-    *   Tamaño: 25 GB.
+    *   Tamaño: **50 GB**. (Recomendado estándar).
     *   **IMPORTANTE:** Pre-reservar espacio completo: **DESMARCADO** (Queremos que crezca dinámicamente).
 
 ### Fase 4: Ajustes de Red (Antes de Arrancar)
@@ -110,6 +111,96 @@ Para que tus servidores funcionen en segundo plano sin tener la ventana de Virtu
 3.  La máquina arrancará en "background" (no verás ventana).
 4.  Podrás conectarte por SSH/Tailscale normalmente.
 5.  Para apagarla: Click derecho > Cerrar > ACPI Shutdown.
+
+### 🔧 Mantenimiento: ¿Cómo aumentar disco de 25GB a 50GB?
+Si ya creaste la máquina y se te quedó corta, **no la borres**. Se puede expandir:
+1.  **En VirtualBox (Host):**
+    *   Apaga la VM.
+    *   Ve a `Archivo` > `Herramientas` > `Administrador de Medios Virtuales`.
+    *   Busca el disco de `Srv-Glados.vdi`, usa el deslizador para subirlo a **50 GB** y dale a "Aplicar".
+2.  **En Linux (Guest):**
+    *   Arranca la VM. Linux verá el espacio físico pero no lo usará aún.
+    *   Ejecuta: `sudo growpart /dev/sda 3` (Para extender la partición LVM, suele ser la 3).
+    *   Ejecuta: `sudo lvextend -l +100%FREE /dev/ubuntu-vg/ubuntu-lv` (Para extender el volumen lógico).
+    *   Ejecuta: `sudo resize2fs /dev/mapper/ubuntu--vg-ubuntu--lv` (Para extender el sistema de archivos).
+    *   *Nota: Los nombres de partición pueden variar, usa `lsblk` para verificar.*
+
+    *   *Nota: Los nombres de partición pueden variar, usa `lsblk` para verificar.*
+
+## 10. Gestión Centralizada: Portainer Agent
+Me preguntaste si deberías agregar algo a Portainer. **SÍ: El Agente.**
+
+## 10. Gestión Visual y Monitorización
+Me preguntaste por Portainer.
+**¿Instalar Docker + Portainer Agent en los nodos K8s?**
+**NO RECOMENDADO.** K3s ya trae su propio "motor" (Containerd). Instalar Docker encima es duplicar procesos y gastar RAM a lo tonto.
+
+**Mejor Estrategia: Portainer Agent (Versión K8s Nativa)**
+Si Portainer te pide Agente, se lo daremos... ¡pero como un Pod de Kubernetes! (Sin instalar Docker extra).
+
+**Pasos:**
+1.  **En Glados (Terminal):**
+    Despliega el agente oficial para K8s:
+    ```bash
+    curl -L https://downloads.portainer.io/ce2-21/portainer-agent-k8s-nodeport.yaml -o portainer-agent-k8s.yaml
+    sudo kubectl apply -f portainer-agent-k8s.yaml
+    ```
+2.  **En Portainer (Tu PC):**
+    *   Ve a `Environments` > `Add environment`.
+    *   Selecciona **Kubernetes** > **Agent**.
+    *   **Name:** `Homelab-K3s`.
+    *   **Environment URL:** `192.168.68.66:30778` (La IP de Glados y el puerto NodePort estándar del agente).
+    *   Dale a **Connect**.
+
+¡Y ya! El agente correrá dentro del clúster consumiendo recursos mínimos, y tendrás control total.
+
+    *   Dale a **Connect**.
+
+¡Y ya! El agente correrá dentro del clúster consumiendo recursos mínimos, y tendrás control total.
+
+## 10.5 Alternativa Visual: OpenLens (Opcional Desktop)
+Si prefieres una app nativa en tu Mac:
+*   Instala **OpenLens**.
+*   Carga el `kubeconfig` de Glados.
+
+## 10.6 La Solución Web Definitiva: Tu Portainer Actual
+Como buscas una solución **100% Web** (sin instalar nada en tu Mac), **Portainer es el ganador.**
+
+**Por qué:**
+1.  **Centralizado:** Ya lo tienes corriendo en Windows.
+2.  **Accesible:** Entras desde Chrome en tu Mac (`http://ip-windows:9000`).
+3.  **Híbrido:** Ves tus contenedores Docker viejos Y tus nuevos Pods de K3s en la misma pestaña.
+
+**Pasos para activarlo (Recap):**
+1.  En **Glados**, despliega el Agente K8s (ver arriba).
+2.  En **Portainer**, conecta al agente (`192.168.68.66:30778`).
+3.  ¡Listo! Desde tu Mac, abre Portainer y gestiona todo.
+
+Verás tus Pods, Logs y Terminales con una interfaz de lujo. Es lo que usan los profesionales.
+
+## 10.6 Monitorización desde Mac (Tu Daily Driver)
+Como usas Mac a diario y Windows es solo el "sótano":
+
+**Opción A: OpenLens en Mac (La mejor)**
+1.  Instala **OpenLens** en tu Mac.
+2.  Copia el `kubeconfig` de Glados.
+3.  **Truco:** Cambia la IP por la **IP de Tailscale de Glados** (`100.x.y.z`) o su nombre MagicDNS (`srv-glados`).
+4.  Al guardar, tu Mac se conectará directo al clúster vía VPN. Tendrás control total remoto.
+
+**Opción B: Tu Homepage (Vistazo Rápido)**
+Como ya tienes Homepage en Windows, agrégale el widget de Kubernetes para ver si los nodos están vivos desde tu Mac (abriendo la web de Homepage).
+
+En tu `services.yaml` de Homepage:
+```yaml
+- Kubernetes: # (Nombre del grupo)
+    - Cluster K3s:
+        icon: kubernetes.png
+        widget:
+            type: kubernetes
+            url: https://192.168.68.66:6443 # IP Local de Glados
+            key: /app/config/kubeconfig # Tienes que montar el archivo dentro del container
+```
+*Requiere montar el archivo `k3s.yaml` dentro del contenedor de Homepage.*
 
 ### Fase 6: 🌐 Salida a Internet (Tailscale)
 Para acceder a tus máquinas desde fuera (SSH) de forma segura y sin abrir puertos, usaremos **Tailscale**. Es una VPN "Mesh" que conecta tus dispositivos como si estuvieran en la misma red WiFi.
