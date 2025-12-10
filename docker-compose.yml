@@ -29,32 +29,6 @@ services:
     networks:
       - homelab-net
 
-  dozzle:
-    image: amir20/dozzle:latest
-    container_name: dozzle
-    restart: unless-stopped
-    ports:
-      - "9999:8080"
-    environment:
-      - DOZZLE_LEVEL=debug
-      - DOZZLE_AUTH_PROVIDER=simple
-    volumes:
-      - ./volumes/dozzle/users.yml:/data/users.yml
-      - /var/run/docker.sock:/var/run/docker.sock
-    networks:
-      - homelab-net
-
-  uptime-kuma:
-    image: louislam/uptime-kuma:1
-    container_name: uptime-kuma
-    restart: unless-stopped
-    ports:
-      - "8083:3001"
-    volumes:
-      - ./volumes/uptime-kuma:/app/data
-    networks:
-      - homelab-net
-
   homepage:
     image: ghcr.io/gethomepage/homepage:latest
     container_name: homepage
@@ -150,33 +124,3 @@ services:
       - cloudflared
       # - ollama
 
-      # --- Remote Access (RustDesk) ---
-  rustdesk-hbbs:
-    image: rustdesk/rustdesk-server:latest
-    container_name: rustdesk-hbbs
-    restart: unless-stopped
-    command: hbbs
-    volumes:
-      - ./volumes/rustdesk:/root
-    ports:
-      - "21115:21115"
-      - "21116:21116"
-      - "21116:21116/udp"
-      - "21118:21118"
-    networks:
-      - homelab-net
-    depends_on:
-      - rustdesk-hbbr
-
-  rustdesk-hbbr:
-    image: rustdesk/rustdesk-server:latest
-    container_name: rustdesk-hbbr
-    restart: unless-stopped
-    command: hbbr
-    volumes:
-      - ./volumes/rustdesk:/root
-    ports:
-      - "21117:21117"
-      - "21119:21119"
-    networks:
-      - homelab-net
