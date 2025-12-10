@@ -124,3 +124,47 @@ services:
       - cloudflared
       # - ollama
 
+  ai-claude:
+    build:
+      context: ./projects/ai-workers
+    container_name: ai-claude
+    restart: unless-stopped
+    ports:
+      - "2222:22"
+    environment:
+      - SSH_PASSWORD=${AI_WORKER_PASSWORD:-password}
+    volumes:
+      - ./volumes/ai-claude/workspace:/workspace
+      - ./volumes/ai-context:/context
+    networks:
+      - homelab-net
+
+  ai-gemini:
+    build:
+      context: ./projects/ai-workers
+    container_name: ai-gemini
+    restart: unless-stopped
+    ports:
+      - "2223:22"
+    environment:
+      - SSH_PASSWORD=${AI_WORKER_PASSWORD:-password}
+    volumes:
+      - ./volumes/ai-gemini/workspace:/workspace
+      - ./volumes/ai-context:/context
+    networks:
+      - homelab-net
+
+  ai-codex:
+    build:
+      context: ./projects/ai-workers
+    container_name: ai-codex
+    restart: unless-stopped
+    ports:
+      - "2224:22"
+    environment:
+      - SSH_PASSWORD=${AI_WORKER_PASSWORD:-password}
+    volumes:
+      - ./volumes/ai-codex/workspace:/workspace
+      - ./volumes/ai-context:/context
+    networks:
+      - homelab-net
