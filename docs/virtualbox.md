@@ -188,21 +188,7 @@ Como usas Mac a diario y Windows es solo el "sótano":
 4.  Al guardar, tu Mac se conectará directo al clúster vía VPN. Tendrás control total remoto.
 
 **Opción B: Tu Homepage (Vistazo Rápido)**
-Como ya tienes Homepage en Windows, agrégale el widget de Kubernetes para ver si los nodos están vivos desde tu Mac (abriendo la web de Homepage).
-
-En tu `services.yaml` de Homepage:
-```yaml
-- Kubernetes: # (Nombre del grupo)
-    - Cluster K3s:
-        icon: kubernetes.png
-        widget:
-            type: kubernetes
-            url: https://192.168.68.66:6443 # IP Local de Glados
-            key: /app/config/kubeconfig # Tienes que montar el archivo dentro del container
-```
-*Requiere montar el archivo `k3s.yaml` dentro del contenedor de Homepage.*
-
-### Fase 6: 🌐 Salida a Internet (Tailscale)
+Como ya tienes Homepage en Windows, agrégale el widget### Fase 6: 🌐 Salida a Internet (Tailscale)
 Para acceder a tus máquinas desde fuera (SSH) de forma segura y sin abrir puertos, usaremos **Tailscale**. Es una VPN "Mesh" que conecta tus dispositivos como si estuvieran en la misma red WiFi.
 
 1.  **En la VM (Glados):**
