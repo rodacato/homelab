@@ -17,6 +17,28 @@ services:
       - homelab-net
 
   # --- Management ---
+  bastion:
+    build:
+      context: ./projects/bastion
+    container_name: bastion
+    restart: unless-stopped
+    ports:
+      - "2225:22"
+    hostname: bastion
+    environment:
+      - SSH_USER=${BASTION_USERNAME}
+      - SSH_PASSWORD=${BASTION_PASSWORD}
+      - TAILSCALE_AUTH_KEY=${TAILSCALE_AUTH_KEY}
+    volumes:
+      - ./volumes/bastion:/home/${BASTION_USERNAME}
+      - ./volumes/tailscale:/var/lib/tailscale
+      - /dev/net/tun:/dev/net/tun
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+    networks:
+      - homelab-net
+
   portainer:
     image: portainer/portainer-ce:latest
     container_name: portainer
